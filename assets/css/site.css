@@ -1,0 +1,39 @@
+body{
+    background-color: #fffcf3;
+    padding: 5px;
+}
+
+.portlet{
+    width: 100%;
+    box-shadow: 0px 1px 15px 1px rgba(113, 106, 202, 0.08);
+    position: relative;
+}
+
+.portlet-white{
+    background: white;  
+}
+
+.portlet .portlet-head{
+    padding: 15px;
+    border-bottom: 1px solid #ebedf2;
+    height: 65px;
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.portlet .portlet-body{
+    padding: 15px;
+}
+
+.portlet .portlet-head .portlet-head-description{
+    position: absolute;
+    left: 15px;
+}
+
+.portlet .portlet-head .portlet-head-tools{
+    position: absolute;
+    right: 15px;
+}
