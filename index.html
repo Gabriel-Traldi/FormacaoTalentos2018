@@ -12,6 +12,7 @@
     <script src="assets/plugins/jquery-3.3.1.min.js"></script>
     <script src="assets/plugins/bootstrap/js/bootstrap.min.js"></script>
 </head>
+
 <body>
 
     <div class="container-fluid">
@@ -72,31 +73,36 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form>
+                    <form name="form-matricula" id="form-matricula">
                         <div class="form-group row">
                             <div class="col-12 col-sm-12 col-md-10 col-lg-10 col-xl-10">
                                 <label for="input-nome">Nome</label>
-                                <input type="text" class="form-control" id="input-nome" name="input-idade">
+                                <input type="text" class="form-control" id="input-nome" name="nome">
                             </div>
                             <div class="col-12 col-sm-12 col-md-2 col-lg-2 col-xl-2">
                                 <label for="input-idade">Idade</label>
-                                <input type="text" class="form-control" id="input-idade" name="input-idade">
+                                <input type="text" class="form-control" id="input-idade" name="idade">
                             </div>
                         </div>
                         <div class="form-group row">
                             <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
                                 <label for="input-email">Email</label>
-                                <input type="text" class="form-control" id="input-email" name="input-email">
+                                <input type="text" class="form-control" id="input-email" name="email">
                             </div>
                         </div>
                         <div class="form-group row">
                             <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-6">
                                 <label for="input-curso">Curso</label>
-                                <input type="text" class="form-control" id="input-curso" name="input-curso">
+                                <input type="text" class="form-control" id="input-curso" name="curso">
                             </div>
                             <div class="col-12 col-sm-12 col-md-6 col-lg-6 col-xl-6">
                                 <label for="input-ra">RA</label>
-                                <input type="text" class="form-control" id="input-ra" name="input-ra">
+                                <input type="text" class="form-control" id="input-ra" name="ra">
+                            </div>
+                            <div class="col-12 col-sm-12 col-md-12 col-lg-12 col-xl-12">
+                                <label for="input-data">Data Matrícula</label>
+                                <input type="text" class="form-control" id="input-data" readonly>
+                                <input type="hidden" class="form-control" id="data" name="dataMatricula">
                             </div>
                         </div>
                     </form>
@@ -114,10 +120,200 @@
 
 <script>
     $(function () {
+
+        // link da API
+        var api = "http://localhost:4000/api/aluno";
+
+        // data atual
+        var d = new Date();
+
+        // Método que faz um select no BD e popula a tabela
+        listarTabela();
+
+        // Método acionado ao clicar no link com o Id addModal
         $("#addModal").click(function () {
+            
+            // Setando um valor para o campo com id #input-data
+            $("#input-data").val(d.toLocaleDateString());
+
+            // Setando um valor para o campo escondido que contém a data em um formato válido para a API
+            $("#data").val(d.toJSON());
+
+            // Setando um título na modal
             $("#tituloModal").html("Matricular Aluno");
+
+            // Abrindo a modal
             $("#modal-manutencao").modal('show');
         });
+
+        // Método acionado ao clicar no link com o Id salvarModal
+        $("#salvarModal").click(function () {
+            // pegando o Id do atributo "data-id" do link/botão com o Id salvarModal
+            var id = $(this).attr("data-id");
+            // pegando os dados inseridos nos inputs da modal e transformando eles em um JSON
+            var dadosForm = $("#form-matricula").serialize();
+
+            // Verificando se o ID existe
+            // Se existe, quer dizer que está alterando
+            if(id != undefined)
+                // chamada do método para alterar
+                alterar(id, dadosForm);
+            else
+                // chamada do método para inserir
+                inserir(dadosForm);
+        });
+
+        // Método acidonado ao clicar em um link com a CLASSE alterar-usuario
+        // Esse método é diferente dos outros, pois como criamos esses links pelo JQuery, na função
+        // de listarTabela, ele só é criado "depois" que o HTML carrega, assim, se eu colocar um função que olha
+        // para o elemento e dispara uma ação no clique desse elemento, ela não vai funcionar, pois quando essa função
+        // fosse declarada, o método link ainda não teria sido criado
+        $(document).on('click', '.alterar-usuario', function () {
+            // pegando o Id do atributo "data-id" do link/botão com o Id salvarModal
+            var id = $(this).attr("data-id");
+            // Seto uma propriedade 'data-id' com o valor do id passado, no link/botão que contém o Id salvarModal
+            // Sendo assim, ele poderá verificar se é exclusão ou inserção
+            $("#salvarModal").attr('data-id', id);
+            // método ajax para retornar o aluno pelo Id
+            // o atributo 'id' vai direto na url
+            $.ajax({
+                type: "GET",
+                url: api + '/' + id,
+                success: function (data) {
+                    aluno = data;
+                    // pegando a data que foi recebida e convertendo ela para a data do JS
+                    var d2 = new Date(aluno.DataMatricula);
+                    // Colocando os valores recebidos da API em cada campo
+                    $("#input-nome").val(aluno.Nome);
+                    $("#input-idade").val(aluno.Idade);
+                    $("#input-email").val(aluno.Email);
+                    $("#input-curso").val(aluno.Curso);
+                    $("#input-ra").val(aluno.RA);
+                    $("#input-data").val(d2.toLocaleDateString());
+                    $("#data").val(d2.toJSON());
+                    // Definindo um título para modal
+                    $("#tituloModal").html("Alterar Matrícula do Aluno");
+                    $("#modal-manutencao").modal('show');
+                },
+                error: function (data) {
+                    console.log(data);
+                }
+            });
+        });
+
+        // Função disparada ao clicar do link com a classe excluir-usuario
+        // Mesmo caso da função de alterar
+        $(document).on('click', '.excluir-usuario', function () {
+            // pego o id que está no elemento
+            var id = $(this).attr("data-id");
+            // Mensagem do js que abre um "alert" com uma pergunta
+            // caso o usuário coloque 'sim', ele retorna true, caso contrário, false
+            if(confirm("Tem certeza que deseja excluir esse dado?")){
+                // Método de deletar
+                // id também vai na url
+                $.ajax({
+                type: "DELETE",
+                url: api + "/" + id,
+                success: function (data) {
+                    // Mensagem ao usuário
+                    alert("Excluído com sucesso!");
+                    // recarregar tabela
+                    reload();
+                },
+                error: function (data) {
+                    console.log("Erro: " + data);
+                }
+            });
+            }
+        });
+
+        // Método de obter todos os dados do BD
+        function listarTabela() {
+            $.ajax({
+                type: "GET",
+                url: api,
+                success: function (data) {
+                    popularTabela(data);
+                },
+                error: function (data) {
+                    alert(data);
+                }
+            });
+        }
+
+        function popularTabela(obj) {
+            var tabela = $("table tbody");
+            var rows = "";
+            jQuery.each(obj, function (index, value) {
+                rows += "<tr>";
+                rows += "<td>" + value.RA + "</td>";
+                rows += "<td>" + value.Nome + "</td>";
+                rows += "<td>" + value.Curso + "</td>";
+                rows += "<td>" + value.DataMatricula + "</td>";
+                
+                // Coluna acrescentada com as opções de alterar e excluir
+                // Crio na tag <a> um atributo 'data-id' e passo o ID do banco, que será utilizado para
+                // concretizar as operações no banco
+                rows += "<td>";
+                rows += "<a href='#' data-id='"+ value.Id +"' class='alterar-usuario'><i class='fa fa-edit'></i></a>";
+                rows += "<a href='#' data-id='"+ value.Id +"' class='excluir-usuario'><i class='fa fa-remove'></i></a>";
+                rows += "</td>";
+
+                rows += "</tr>";
+            });
+            tabela.append(rows);
+        }
+
+        // método para inserir um aluno no banco
+        function inserir(obj) {
+            $.ajax({
+                type: "POST",
+                url: api,
+                data: obj,
+                success: function () {
+                    $("#modal-manutencao").modal('hide');
+                    alert("Inserido com sucesso");
+                    reload();
+                },
+                error: function (data) {
+                    console.log(data);
+                }
+            });
+        }
+
+        // método para alterar um aluno no banco
+        function alterar(id, obj) {
+            $.ajax({
+                type: "PUT",
+                url: api + '/' + id,
+                data: obj,
+                success: function () {
+                    $("#modal-manutencao").modal('hide');
+                    alert("Alterado com sucesso");
+                    reload();
+                },
+                error: function (data) {
+                    console.log(data);
+                }
+            });
+        }
+
+        // Método de reload da tabele
+        function reload() {
+            // remove as linhas com conteúdo
+            $("tbody tr").remove();
+            // pega novamente do banco
+            listarTabela();
+            // limpa os valores no formulário que foram setados na função de alterar
+            // (eles não somem sozinho, pois definimos um valor via JQuery)
+            $("#form-matricula").each(function(){
+                this.reset();
+            });
+            // remove o atributo 'data-id' - assim evitamos que um usuário primeiro altere (e então a função
+            // coloque esse atributo) e depois tente inserir (o atributo ainda estaria lá) e o nosso if caísse em
+            // alterar e não em inserir
+            $("#salvarModal").removeAttr('data-id');
+        }
     });
 </script>
 
